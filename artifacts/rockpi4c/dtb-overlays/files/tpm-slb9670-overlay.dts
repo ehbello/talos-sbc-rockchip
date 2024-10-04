@@ -1,0 +1,50 @@
+/*
+ * Device Tree overlay for the Infineon SLB9670 Trusted Platform Module add-on
+ * boards, which can be used as a secure key storage and hwrng.
+ * available as "Iridium SLB9670" by Infineon and "LetsTrust TPM" by pi3g.
+ * Compatible with RK3399 chips using the GPIO4 as CE1
+ */
+
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "rockchip,rk3399";
+
+	fragment@0 {
+		target = <&gpio4>;
+		__overlay__ {
+			gpio-controller;
+			#gpio-cells = <2>;
+		};
+	};
+
+	fragment@1 {
+		target = <&spi1>;
+		__overlay__ {
+			status = "okay";
+
+			num-cs = <2>;  // We want a 2nd chip select
+			cs-gpios = <&gpio4 29 0>;  // Reference to GPIO4, pin 29, active low (0)
+
+			/* needed to avoid dtc warning */
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			/* disabled to avoid incompatibilities using GPIO4_D5 as CE1 */
+			flash@0 {
+				reg = <0>;	/* CE0 /* needed to avoid dtc warning */
+				status = "disabled";
+			};
+
+			slb9670: slb9670@1 {
+				compatible = "infineon,slb9670";
+				reg = <1>;	/* CE1 */
+				#address-cells = <1>;
+				#size-cells = <0>;
+				spi-max-frequency = <10000000>;
+				status = "okay";
+			};
+		};
+	};
+};
