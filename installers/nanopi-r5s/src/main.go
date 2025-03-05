@@ -32,7 +32,7 @@ type nanopir5sExtraOptions struct{}
 
 func (i *nanopir5s) GetOptions(extra nanopir5sExtraOptions) (overlay.Options, error) {
 	return overlay.Options{
-		Name: "nanopi-r5s",
+		Name: board,
 		KernelArgs: []string{
 			"console=tty0",
 			"console=ttyS2,1500000n8",
@@ -46,14 +46,35 @@ func (i *nanopir5s) GetOptions(extra nanopir5sExtraOptions) (overlay.Options, er
 }
 
 func (i *nanopir5s) Install(options overlay.InstallOptions[nanopir5sExtraOptions]) error {
-	f, err := os.OpenFile(options.InstallDisk, os.O_RDWR|unix.O_CLOEXEC, 0o666)
+	uBootBin := filepath.Join(options.ArtifactsPath, "arm64/u-boot", board, "u-boot-rockchip.bin")
+
+	if err := uBootLoaderInstall(uBootBin, options.InstallDisk); err != nil {
+		return err
+	}
+
+	src := filepath.Join(options.ArtifactsPath, "arm64/dtb", dtb)
+	dst := filepath.Join(options.MountPrefix, "boot/EFI/dtb", dtb)
+
+	return copyFileAndCreateDir(src, dst)
+}
+
+func copyFileAndCreateDir(src, dst string) error {
+	if err := os.MkdirAll(filepath.Dir(dst), 0o700); err != nil {
+		return err
+	}
+
+	return copy.File(src, dst)
+}
+
+func uBootLoaderInstall(uBootBin, installDisk string) error {
+	f, err := os.OpenFile(installDisk, unix.O_RDWR|unix.O_CLOEXEC, 0o666)
 	if err != nil {
-		return fmt.Errorf("failed to open %s: %w", options.InstallDisk, err)
+		return fmt.Errorf("failed to open %s: %w", installDisk, err)
 	}
 
 	defer f.Close() //nolint:errcheck
 
-	uboot, err := os.ReadFile(filepath.Join(options.ArtifactsPath, "arm64/u-boot", board, "u-boot-rockchip.bin"))
+	uboot, err := os.ReadFile(uBootBin)
 	if err != nil {
 		return err
 	}
@@ -65,22 +86,5 @@ func (i *nanopir5s) Install(options overlay.InstallOptions[nanopir5sExtraOptions
 	// NB: In the case that the block device is a loopback device, we sync here
 	// to ensure that the file is written before the loopback device is
 	// unmounted.
-	err = f.Sync()
-	if err != nil {
-		return err
-	}
-
-	src := filepath.Join(options.ArtifactsPath, "arm64/dtb", dtb)
-	dst := filepath.Join(options.MountPrefix, "/boot/EFI/dtb", dtb)
-
-	err = os.MkdirAll(filepath.Dir(dst), 0o600)
-	if err != nil {
-		return err
-	}
-
-	if err := copy.File(src, dst); err != nil {
-		return err
-	}
-
-	return nil
+	return f.Sync()
 }
