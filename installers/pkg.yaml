@@ -43,7 +43,7 @@ dependencies:
     platform: linux/arm64
   - stage: u-boot-orangepi-r1-plus-lts
     platform: linux/arm64
-  - stage: u-boot-radxa-zero-3
+  - stage: u-boot-radxa-zero-3e
     platform: linux/arm64
   - stage: u-boot-rock64
     platform: linux/arm64

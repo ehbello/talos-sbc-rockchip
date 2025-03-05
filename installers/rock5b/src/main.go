@@ -17,8 +17,9 @@ import (
 )
 
 const (
-	off int64 = 512 * 64
-	dtb       = "rockchip/rk3588-rock-5b.dtb"
+	off   int64 = 512 * 64
+	board       = "rock5b"
+	dtb         = "rockchip/rk3588-rock-5b.dtb"
 )
 
 func main() {
@@ -32,17 +33,16 @@ type rock5bExtraOptions struct {
 }
 
 func (i *rock5b) GetOptions(extra rock5bExtraOptions) (overlay.Options, error) {
-	kernelArgs := []string{
-		"cma=128MB",
-		"console=tty0",
-		"console=ttyS9,115200",
-		"console=ttyS2,115200",
-		"sysctl.kernel.kexec_load_disabled=1",
-		"talos.dashboard.disabled=1",
-	}
 	return overlay.Options{
-		Name:       "rock5b",
-		KernelArgs: kernelArgs,
+		Name: board,
+		KernelArgs: []string{
+			"cma=128MB",
+			"console=tty0",
+			"console=ttyS9,115200",
+			"console=ttyS2,115200",
+			"sysctl.kernel.kexec_load_disabled=1",
+			"talos.dashboard.disabled=1",
+		},
 		PartitionOptions: overlay.PartitionOptions{
 			Offset: 2048 * 10,
 		},
@@ -51,7 +51,7 @@ func (i *rock5b) GetOptions(extra rock5bExtraOptions) (overlay.Options, error) {
 
 func (i *rock5b) Install(options overlay.InstallOptions[rock5bExtraOptions]) error {
 	if !options.ExtraOptions.SPIBoot {
-		uBootBin := filepath.Join(options.ArtifactsPath, "arm64/u-boot/rock5b/u-boot-rockchip.bin")
+		uBootBin := filepath.Join(options.ArtifactsPath, "arm64/u-boot", board, "u-boot-rockchip.bin")
 
 		if err := uBootLoaderInstall(uBootBin, options.InstallDisk); err != nil {
 			return err
@@ -61,15 +61,11 @@ func (i *rock5b) Install(options overlay.InstallOptions[rock5bExtraOptions]) err
 	src := filepath.Join(options.ArtifactsPath, "arm64/dtb", dtb)
 	dst := filepath.Join(options.MountPrefix, "boot/EFI/dtb", dtb)
 
-	if err := copyFileAndCreateDir(src, dst); err != nil {
-		return err
-	}
-
-	return nil
+	return copyFileAndCreateDir(src, dst)
 }
 
 func copyFileAndCreateDir(src, dst string) error {
-	if err := os.MkdirAll(filepath.Dir(dst), 0o600); err != nil {
+	if err := os.MkdirAll(filepath.Dir(dst), 0o700); err != nil {
 		return err
 	}
 
@@ -77,7 +73,7 @@ func copyFileAndCreateDir(src, dst string) error {
 }
 
 func uBootLoaderInstall(uBootBin, installDisk string) error {
-	f, err := os.OpenFile(installDisk, os.O_RDWR|unix.O_CLOEXEC, 0o666)
+	f, err := os.OpenFile(installDisk, unix.O_RDWR|unix.O_CLOEXEC, 0o666)
 	if err != nil {
 		return fmt.Errorf("failed to open %s: %w", installDisk, err)
 	}

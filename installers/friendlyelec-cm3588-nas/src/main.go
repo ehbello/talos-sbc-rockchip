@@ -17,8 +17,9 @@ import (
 )
 
 const (
-	off int64 = 512 * 64
-	dtb       = "rockchip/rk3588-friendlyelec-cm3588-nas.dtb"
+	off   int64 = 512 * 64
+	board       = "friendlyelec-cm3588-nas"
+	dtb         = "rockchip/rk3588-friendlyelec-cm3588-nas.dtb"
 )
 
 func main() {
@@ -27,20 +28,19 @@ func main() {
 
 type friendlyelecCM3588Nas struct{}
 
-type friendlyelecCM3588NasExtraOptions struct {}
+type friendlyelecCM3588NasExtraOptions struct{}
 
 func (i *friendlyelecCM3588Nas) GetOptions(extra friendlyelecCM3588NasExtraOptions) (overlay.Options, error) {
-	kernelArgs := []string{
-		"cma=128MB",
-		"console=tty0",
-		"console=ttyS9,115200",
-		"console=ttyS2,115200",
-		"sysctl.kernel.kexec_load_disabled=1",
-		"talos.dashboard.disabled=1",
-	}
 	return overlay.Options{
-		Name:       "friendlyelec-cm3588-nas",
-		KernelArgs: kernelArgs,
+		Name: board,
+		KernelArgs: []string{
+			"cma=128MB",
+			"console=tty0",
+			"console=ttyS9,115200",
+			"console=ttyS2,115200",
+			"sysctl.kernel.kexec_load_disabled=1",
+			"talos.dashboard.disabled=1",
+		},
 		PartitionOptions: overlay.PartitionOptions{
 			Offset: 2048 * 10,
 		},
@@ -48,7 +48,7 @@ func (i *friendlyelecCM3588Nas) GetOptions(extra friendlyelecCM3588NasExtraOptio
 }
 
 func (i *friendlyelecCM3588Nas) Install(options overlay.InstallOptions[friendlyelecCM3588NasExtraOptions]) error {
-	uBootBin := filepath.Join(options.ArtifactsPath, "arm64/u-boot/friendlyelec-cm3588-nas/u-boot-rockchip.bin")
+	uBootBin := filepath.Join(options.ArtifactsPath, "arm64/u-boot", board, "u-boot-rockchip.bin")
 
 	if err := uBootLoaderInstall(uBootBin, options.InstallDisk); err != nil {
 		return err
@@ -57,15 +57,11 @@ func (i *friendlyelecCM3588Nas) Install(options overlay.InstallOptions[friendlye
 	src := filepath.Join(options.ArtifactsPath, "arm64/dtb", dtb)
 	dst := filepath.Join(options.MountPrefix, "boot/EFI/dtb", dtb)
 
-	if err := copyFileAndCreateDir(src, dst); err != nil {
-		return err
-	}
-
-	return nil
+	return copyFileAndCreateDir(src, dst)
 }
 
 func copyFileAndCreateDir(src, dst string) error {
-	if err := os.MkdirAll(filepath.Dir(dst), 0o600); err != nil {
+	if err := os.MkdirAll(filepath.Dir(dst), 0o700); err != nil {
 		return err
 	}
 
@@ -73,7 +69,7 @@ func copyFileAndCreateDir(src, dst string) error {
 }
 
 func uBootLoaderInstall(uBootBin, installDisk string) error {
-	f, err := os.OpenFile(installDisk, os.O_RDWR|unix.O_CLOEXEC, 0o666)
+	f, err := os.OpenFile(installDisk, unix.O_RDWR|unix.O_CLOEXEC, 0o666)
 	if err != nil {
 		return fmt.Errorf("failed to open %s: %w", installDisk, err)
 	}

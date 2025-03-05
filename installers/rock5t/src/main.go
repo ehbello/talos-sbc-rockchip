@@ -61,15 +61,11 @@ func (i *rock5t) Install(options overlay.InstallOptions[rock5tExtraOptions]) err
 	src := filepath.Join(options.ArtifactsPath, "arm64/dtb", dtb)
 	dst := filepath.Join(options.MountPrefix, "boot/EFI/dtb", dtb)
 
-	if err := copyFileAndCreateDir(src, dst); err != nil {
-		return err
-	}
-
-	return nil
+	return copyFileAndCreateDir(src, dst)
 }
 
 func copyFileAndCreateDir(src, dst string) error {
-	if err := os.MkdirAll(filepath.Dir(dst), 0o600); err != nil {
+	if err := os.MkdirAll(filepath.Dir(dst), 0o700); err != nil {
 		return err
 	}
 
@@ -77,7 +73,7 @@ func copyFileAndCreateDir(src, dst string) error {
 }
 
 func uBootLoaderInstall(uBootBin, installDisk string) error {
-	f, err := os.OpenFile(installDisk, os.O_RDWR|unix.O_CLOEXEC, 0o666)
+	f, err := os.OpenFile(installDisk, unix.O_RDWR|unix.O_CLOEXEC, 0o666)
 	if err != nil {
 		return fmt.Errorf("failed to open %s: %w", installDisk, err)
 	}
