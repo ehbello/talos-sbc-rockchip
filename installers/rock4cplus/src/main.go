@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/siderolabs/go-cmd/pkg/cmd"
 	"github.com/siderolabs/go-copy/copy"
 	"github.com/siderolabs/talos/pkg/machinery/overlay"
 	"github.com/siderolabs/talos/pkg/machinery/overlay/adapter"
@@ -29,7 +31,9 @@ func main() {
 
 type rock4cplus struct{}
 
-type rock4cplusExtraOptions struct{}
+type rock4cplusExtraOptions struct {
+	DTOverlays string `yaml:"dtOverlays,omitempty"`
+}
 
 func (i *rock4cplus) GetOptions(extra rock4cplusExtraOptions) (overlay.Options, error) {
 	return overlay.Options{
@@ -55,6 +59,26 @@ func (i *rock4cplus) Install(options overlay.InstallOptions[rock4cplusExtraOptio
 
 	src := filepath.Join(options.ArtifactsPath, "arm64/dtb", dtb)
 	dst := filepath.Join(options.MountPrefix, "boot/EFI/dtb", dtb)
+
+	if dtOverlays := options.ExtraOptions.DTOverlays; dtOverlays != "" {
+		// Apply each overlay sequentially
+		overlayNames := strings.Split(dtOverlays, ",")
+
+		for _, overlayName := range overlayNames {
+			overlayPath := filepath.Join(options.ArtifactsPath, "arm64/dtb/rockchip/overlays", overlayName+".dtbo")
+
+			// Run fdtoverlay to merge the overlay with the base DTB
+			if _, err := cmd.Run(
+				"/usr/bin/fdtoverlay",
+				"-v",      // verbose output
+				"-i", src, // input file
+				"-o", src, // output file (it is ok to use the same file)
+				overlayPath, // overlay file
+			); err != nil {
+				return fmt.Errorf("failed to apply overlay %s: %w", overlayName, err)
+			}
+		}
+	}
 
 	return copyFileAndCreateDir(src, dst)
 }

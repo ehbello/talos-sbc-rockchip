@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/siderolabs/go-cmd/pkg/cmd"
 	"github.com/siderolabs/go-copy/copy"
 	"github.com/siderolabs/talos/pkg/machinery/overlay"
 	"github.com/siderolabs/talos/pkg/machinery/overlay/adapter"
@@ -29,7 +31,8 @@ func main() {
 type rock5b struct{}
 
 type rock5bExtraOptions struct {
-	SPIBoot bool `yaml:"spi_boot,omitempty"`
+	DTOverlays string `yaml:"dtOverlays,omitempty"`
+	SPIBoot    bool   `yaml:"spi_boot,omitempty"`
 }
 
 func (i *rock5b) GetOptions(extra rock5bExtraOptions) (overlay.Options, error) {
@@ -60,6 +63,26 @@ func (i *rock5b) Install(options overlay.InstallOptions[rock5bExtraOptions]) err
 
 	src := filepath.Join(options.ArtifactsPath, "arm64/dtb", dtb)
 	dst := filepath.Join(options.MountPrefix, "boot/EFI/dtb", dtb)
+
+	if dtOverlays := options.ExtraOptions.DTOverlays; dtOverlays != "" {
+		// Apply each overlay sequentially
+		overlayNames := strings.Split(dtOverlays, ",")
+
+		for _, overlayName := range overlayNames {
+			overlayPath := filepath.Join(options.ArtifactsPath, "arm64/dtb/rockchip/overlays", overlayName+".dtbo")
+
+			// Run fdtoverlay to merge the overlay with the base DTB
+			if _, err := cmd.Run(
+				"/usr/bin/fdtoverlay",
+				"-v",      // verbose output
+				"-i", src, // input file
+				"-o", src, // output file (it is ok to use the same file)
+				overlayPath, // overlay file
+			); err != nil {
+				return fmt.Errorf("failed to apply overlay %s: %w", overlayName, err)
+			}
+		}
+	}
 
 	return copyFileAndCreateDir(src, dst)
 }
