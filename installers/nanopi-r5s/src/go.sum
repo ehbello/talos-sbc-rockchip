@@ -1,3 +1,7 @@
+github.com/armon/circbuf v0.0.0-20190214190532-5111143e8da2 h1:7Ip0wMmLHLRJdrloDxZfhMm0xrLXZS8+COSu2bXmEQs=
+github.com/armon/circbuf v0.0.0-20190214190532-5111143e8da2/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
+github.com/siderolabs/go-cmd v0.1.3 h1:JrgZwqhJQeoec3QRON0LK+fv+0y7d0DyY7zsfkO6ciw=
+github.com/siderolabs/go-cmd v0.1.3/go.mod h1:bg7HY4mRNu4zKebAgUevSwuYNtcvPMJfuhLRkVKHZ0k=
 github.com/siderolabs/go-copy v0.1.0 h1:OIWCtSg+rhOtnIZTpT31Gfpn17rv5kwJqQHG+QUEgC8=
 github.com/siderolabs/go-copy v0.1.0/go.mod h1:4bF2rZOZAR/ags/U4AVSpjFE5RPGdEeSkOq6yR9YOkU=
 github.com/siderolabs/talos/pkg/machinery v1.9.5 h1:hH+f48MLNoDUeyny1zR/i2fLqReK64Fq9WmIizL8GEs=
