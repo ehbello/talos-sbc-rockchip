@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/siderolabs/go-cmd/pkg/cmd"
 	"github.com/siderolabs/go-copy/copy"
 	"github.com/siderolabs/talos/pkg/machinery/overlay"
 	"github.com/siderolabs/talos/pkg/machinery/overlay/adapter"
@@ -29,6 +31,7 @@ func main() {
 type opi5MaxInstaller struct{}
 
 type opi5MaxExtraOptions struct {
+	DTOverlays string `yaml:"dtOverlays,omitempty"`
 	SPIBoot bool `yaml:"spi_boot,omitempty"`
 }
 
@@ -58,6 +61,27 @@ func (i *opi5MaxInstaller) Install(options overlay.InstallOptions[opi5MaxExtraOp
 
 	src := filepath.Join(options.ArtifactsPath, "arm64/dtb", dtb)
 	dst := filepath.Join(options.MountPrefix, "boot/EFI/dtb", dtb)
+
+	if dtOverlays := options.ExtraOptions.DTOverlays; dtOverlays != "" {
+		// Apply each overlay sequentially
+		overlayNames := strings.Split(dtOverlays, ",")
+		fdtoverlayPath := filepath.Join(options.ArtifactsPath, "arm64/fdtoverlay")
+
+		for _, overlayName := range overlayNames {
+			overlayPath := filepath.Join(options.ArtifactsPath, "arm64/dtb/rockchip/overlays", overlayName+".dtbo")
+
+			// Run fdtoverlay to merge the overlay with the base DTB
+			if _, err := cmd.Run(
+				fdtoverlayPath,
+				"-v",      // verbose output
+				"-i", src, // input file
+				"-o", src, // output file (it is ok to use the same file)
+				overlayPath, // overlay file
+			); err != nil {
+				return fmt.Errorf("failed to apply overlay %s: %w", overlayName, err)
+			}
+		}
+	}
 
 	return copyFileAndCreateDir(src, dst)
 }

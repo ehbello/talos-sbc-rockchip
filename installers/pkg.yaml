@@ -2,6 +2,8 @@ name: sbc-rockchip
 variant: scratch
 shell: /bin/bash
 dependencies:
+  - stage: fdtoverlay
+    platform: linux/arm64
   - stage: friendlyelec-cm3588-nas
   - stage: helios64
   - stage: nanopi-r5s
