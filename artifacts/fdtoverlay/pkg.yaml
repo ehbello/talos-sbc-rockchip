@@ -1,0 +1,29 @@
+name: fdtoverlay
+variant: scratch
+dependencies:
+  - stage: base
+steps:
+  - sources:
+      - url: https://mirrors.edge.kernel.org/pub/software/utils/dtc/dtc-{{ .dtc_version }}.tar.xz
+        destination: dtc.tar.xz
+        sha256: "{{ .dtc_sha256 }}"
+        sha512: "{{ .dtc_sha512 }}"
+    env:
+      CC: gcc
+      CXX: g++
+    prepare:
+      - |
+        tar -xJf dtc.tar.xz --strip-components=1
+
+        sed -i s:-Werror::g Makefile
+    build:
+      - |
+        make -j $(nproc) STATIC_BUILD=1 fdtoverlay
+    install:
+      - |
+        mkdir -p /rootfs/artifacts/arm64/
+
+        cp fdtoverlay /rootfs/artifacts/arm64/
+finalize:
+  - from: /rootfs
+    to: /rootfs

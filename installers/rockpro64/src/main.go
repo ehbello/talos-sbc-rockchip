@@ -62,13 +62,14 @@ func (i *rockPro64) Install(options overlay.InstallOptions[rockPro64ExtraOptions
 	if dtOverlays := options.ExtraOptions.DTOverlays; dtOverlays != "" {
 		// Apply each overlay sequentially
 		overlayNames := strings.Split(dtOverlays, ",")
+		fdtoverlayPath := filepath.Join(options.ArtifactsPath, "arm64/fdtoverlay")
 
 		for _, overlayName := range overlayNames {
 			overlayPath := filepath.Join(options.ArtifactsPath, "arm64/dtb/rockchip/overlays", overlayName+".dtbo")
 
 			// Run fdtoverlay to merge the overlay with the base DTB
 			if _, err := cmd.Run(
-				"/usr/bin/fdtoverlay",
+				fdtoverlayPath,
 				"-v",      // verbose output
 				"-i", src, // input file
 				"-o", src, // output file (it is ok to use the same file)
