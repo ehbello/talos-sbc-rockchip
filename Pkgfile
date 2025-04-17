@@ -13,6 +13,16 @@ vars:
   dtc_sha256: 92d8ca769805ae1f176204230438fe52808f4e1c7944053c9eec0e649b237539
   dtc_sha512: 30f3611175a5c29556282f3f2894701a5837eb869608d89d78c280af448bbc3a5b6c83f51c28f991847c0eb7c42aa57599bbc31433f1b3b2c8d162cb2169b91f
 
+  # renovate: datasource=github-tags extractVersion=^(?<version>.*)$ depName=tianocore/edk2
+  edk2_version: edk2-stable202408.01
+  edk2_sha256: 2f9d118aca8d1bef89512c071977b893ba8eb8b62d22e1afb7b7b3ff60490a7a
+  edk2_sha512: 01170f65e0798d74da9c38b715894d7bd85e7be9bce7546db20ba475fa43882660319c4db7bb7e52a91f33a2b4fab3b67e9645e01fc306a7e072bef4ded593c0
+
+  # renovate: datasource=git-refs versioning=git depName=https://github.com/tianocore/edk2-platforms.git
+  edk2_platforms_ref: bbdf397aabc6b4d5469fad3beb162e75b1f762da
+  edk2_platforms_sha256: ab4d6e1227c5969d49b4240fe72f557364c60b4c4f203d900b8cfd3ae20f9314
+  edk2_platforms_sha512: 9143697bf4e878d240e8faa616c90bbd096fe6faef68fd01cba8b65b4013e5aca340075a51c4c3cc0bf3ccb5ed9969b2cde55b8d8246f4a0feaa362222141991
+
   # renovate: datasource=github-tags extractVersion=^v(?<version>.*)$ depName=u-boot/u-boot
   uboot_version: 2026.01
   uboot_sha256: b60d5865cefdbc75da8da4156c56c458e00de75a49b80c1a2e58a96e30ad0d54

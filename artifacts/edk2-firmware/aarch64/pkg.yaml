@@ -1,0 +1,55 @@
+name: edk2-firmware-aarch64
+variant: scratch
+shell: /bin/bash
+dependencies:
+  - stage: base
+steps:
+  - sources:
+      - url: https://github.com/tianocore/edk2-platforms/archive/{{ .edk2_platforms_ref }}.tar.gz
+        destination: edk2-platforms.tar.gz
+        sha256: "{{ .edk2_platforms_sha256 }}"
+        sha512: "{{ .edk2_platforms_sha512 }}"
+    env:
+      SOURCE_DATE_EPOCH: {{ .BUILD_ARG_SOURCE_DATE_EPOCH }}
+    network: default
+    prepare:
+      - |
+        # Required to fetch a lot of submodules at once
+        git clone --recurse-submodules --branch {{ .edk2_version }} \
+          https://github.com/tianocore/edk2.git
+
+        sha256=$(tar -C edk2/ --exclude-vcs -cf - . | sha256sum)
+        sha512=$(tar -C edk2/ --exclude-vcs -cf - . | sha512sum)
+
+        # [ ${sha256} != {{ .edk2_sha256 }} ] && {echo "Expected sha256: {{ .edk2_sha256 }}, Got: ${sha256}"; exit 1}
+        # [ ${sha512} != {{ .edk2_sha512 }} ] && {echo "Expected sha512: {{ .edk2_sha512 }}, Got: ${sha512}"; exit 1}
+
+      - patch -d edk2 -p1 -i /pkg/patches/fix-maybe-uninitialized-errors.patch
+      - |
+        mkdir -p edk2-platforms && tar xf edk2-platforms.tar.gz --strip-components=1 -C edk2-platforms
+        rm edk2-platforms.tar.gz
+
+    # rk3399
+    build:
+      - |
+        export WORKSPACE=$(pwd)
+        export PACKAGES_PATH=$WORKSPACE/edk2:$WORKSPACE/edk2-platforms
+
+        export ACTIVE_PLATFORM="edk2-platforms/Platform/StandaloneMm/PlatformStandaloneMmPkg/PlatformStandaloneMmRpmb.dsc"
+        export GCCNOLTO_AARCH64_PREFIX=
+
+        set +o nounset
+        source edk2/edksetup.sh
+        set -o nounset
+
+        make -C ${EDK_TOOLS_PATH}
+        build -p $ACTIVE_PLATFORM -b RELEASE -a AARCH64 -t GCCNOLTO -n `nproc`
+
+    install:
+      - |
+        mkdir -p /rootfs/edk2-firmware/aarch64
+
+        cp Build/MmStandaloneRpmb/RELEASE_GCCNOLTO/FV/BL32_AP_MM.fd /rootfs/edk2-firmware/aarch64/BL32_AP_MM.fd
+finalize:
+  - from: /rootfs
+    to: /libs
