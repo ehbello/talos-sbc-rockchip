@@ -159,6 +159,10 @@ dependencies:
     platform: linux/arm64
     from: /dtb/rockchip/rk3588-turing-rk1.dtb
     to: /rootfs/artifacts/arm64/dtb/rockchip/rk3588-turing-rk1.dtb
+  - stage: rockpi4c-dtb
+    platform: linux/arm64
+    from: /dtb/rockchip/rk3399-rock-pi-4c.dtb
+    to: /rootfs/artifacts/arm64/dtb/rockchip/rk3399-rock-pi-4c.dtb
   - stage: radxa-overlays
     platform: linux/arm64
 finalize:
