@@ -27,7 +27,7 @@ steps:
       - |
         mkdir -p /rootfs/installers/
 
-        cp -p /pkg/src/turingrk1 /rootfs/installers/turingrk1
+        cp /pkg/src/turingrk1 /rootfs/installers/turingrk1
 finalize:
   - from: /rootfs
     to: /rootfs

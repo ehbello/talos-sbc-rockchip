@@ -27,7 +27,7 @@ steps:
       - |
         mkdir -p /rootfs/installers/
 
-        cp -p /pkg/src/orangepi-5 /rootfs/installers/orangepi-5
+        cp /pkg/src/orangepi-5 /rootfs/installers/orangepi-5
 finalize:
   - from: /rootfs
     to: /rootfs

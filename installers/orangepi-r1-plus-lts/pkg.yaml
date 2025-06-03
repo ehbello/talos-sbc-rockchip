@@ -4,15 +4,19 @@ shell: /bin/bash
 dependencies:
   - stage: base
 steps:
-  - cachePaths:
+  - env:
+      GOPATH: /tmp/go
+    network: default
+    cachePaths:
       - /.cache/go-build
       - /tmp/go/pkg
-    network: default
     prepare:
       - |
         cd /pkg/src
         go mod download
-  - cachePaths:
+  - env:
+      GOPATH: /tmp/go
+    cachePaths:
       - /.cache/go-build
       - /tmp/go/pkg
     build:
