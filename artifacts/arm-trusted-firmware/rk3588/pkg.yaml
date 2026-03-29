@@ -13,7 +13,7 @@ steps:
       SOURCE_DATE_EPOCH: {{ .BUILD_ARG_SOURCE_DATE_EPOCH }}
     prepare:
       - |
-        tar xzf arm-trusted-firmware.tar.gz --strip-components=1
+        tar xf arm-trusted-firmware.tar.gz --strip-components=1
     # rk3588
     build:
       - |
