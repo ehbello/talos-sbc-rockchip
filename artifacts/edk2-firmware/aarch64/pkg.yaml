@@ -24,7 +24,6 @@ steps:
         # [ ${sha256} != {{ .edk2_sha256 }} ] && {echo "Expected sha256: {{ .edk2_sha256 }}, Got: ${sha256}"; exit 1}
         # [ ${sha512} != {{ .edk2_sha512 }} ] && {echo "Expected sha512: {{ .edk2_sha512 }}, Got: ${sha512}"; exit 1}
 
-      - patch -d edk2 -p1 -i /pkg/patches/fix-maybe-uninitialized-errors.patch
       - |
         mkdir -p edk2-platforms && tar xf edk2-platforms.tar.gz --strip-components=1 -C edk2-platforms
         rm edk2-platforms.tar.gz
@@ -42,7 +41,15 @@ steps:
         source edk2/edksetup.sh
         set -o nounset
 
-        make -C ${EDK_TOOLS_PATH}
+        # GCC 15 raises many -Werror=maybe-uninitialized false positives in
+        # edk2 (which already suppresses the same warning for its bundled
+        # mbedTLS). Relax it globally for this platform build.
+        printf '\n[BuildOptions]\n  GCC:*_*_*_CC_FLAGS = -Wno-error=maybe-uninitialized\n' >> "$ACTIVE_PLATFORM"
+
+        # BaseTools still builds the antique K&R Pccts/dlg lexer generator at
+        # this edk2 release; GCC 15 defaults to C23 and rejects it. Build the
+        # host tools with an older C standard (no edk2 source patch needed).
+        make -C ${EDK_TOOLS_PATH} CC="gcc -std=gnu17"
         build -p $ACTIVE_PLATFORM -b RELEASE -a AARCH64 -t GCCNOLTO -n `nproc`
 
     install:

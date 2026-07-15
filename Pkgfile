@@ -14,14 +14,14 @@ vars:
   dtc_sha512: 30f3611175a5c29556282f3f2894701a5837eb869608d89d78c280af448bbc3a5b6c83f51c28f991847c0eb7c42aa57599bbc31433f1b3b2c8d162cb2169b91f
 
   # renovate: datasource=github-tags extractVersion=^(?<version>.*)$ depName=tianocore/edk2
-  edk2_version: edk2-stable202408.01
+  edk2_version: edk2-stable202508
   edk2_sha256: 2f9d118aca8d1bef89512c071977b893ba8eb8b62d22e1afb7b7b3ff60490a7a
   edk2_sha512: 01170f65e0798d74da9c38b715894d7bd85e7be9bce7546db20ba475fa43882660319c4db7bb7e52a91f33a2b4fab3b67e9645e01fc306a7e072bef4ded593c0
 
   # renovate: datasource=git-refs versioning=git depName=https://github.com/tianocore/edk2-platforms.git
-  edk2_platforms_ref: bbdf397aabc6b4d5469fad3beb162e75b1f762da
-  edk2_platforms_sha256: ab4d6e1227c5969d49b4240fe72f557364c60b4c4f203d900b8cfd3ae20f9314
-  edk2_platforms_sha512: 9143697bf4e878d240e8faa616c90bbd096fe6faef68fd01cba8b65b4013e5aca340075a51c4c3cc0bf3ccb5ed9969b2cde55b8d8246f4a0feaa362222141991
+  edk2_platforms_ref: d82aa92c1d360c1b53ccad4dc45bdd8164a560d5
+  edk2_platforms_sha256: 437617228eda2348ac1ab6e8f09e44ce9aa60c5e788bc765d6d595f30793833d
+  edk2_platforms_sha512: 780843dae6968f0f3c4e162e0bfe56d48d365b870a539d93af5d70abbf80e1e258616810ad7ae0128f525239a16f1081b7a3dafe4512ff4b0d0c935b8794ba19
 
   # renovate: datasource=github-tags extractVersion=^(?<version>.*)$ depName=Microsoft/ms-tpm-20-ref
   ms_tpm_20_ref_version: Historical_Samples
