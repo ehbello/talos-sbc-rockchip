@@ -1,0 +1,68 @@
+diff --git i/arch/arm/dts/rk3399-u-boot.dtsi w/arch/arm/dts/rk3399-u-boot.dtsi
+index b6b43271172..5c0b52e5c48 100644
+--- i/arch/arm/dts/rk3399-u-boot.dtsi
++++ w/arch/arm/dts/rk3399-u-boot.dtsi
+@@ -16,6 +16,29 @@
+ 		u-boot,spl-boot-order = "same-as-spl", &sdhci, &sdmmc;
+ 	};
+ 
++	firmware {
++		optee {
++			compatible = "linaro,optee-tz";
++			method = "smc";
++		};
++	};
++
++	reserved-memory {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++
++		event_log: tcg_event_log {
++			no-map;
++			reg = <(0xf8000000 - 0x2000) 0x2000>;
++		};
++	};
++
++	tpm@0 {
++		compatible = "microsoft,ftpm";
++		memory-region = <&event_log>;
++	};
++
+ 	pmusgrf: syscon@ff330000 {
+ 		compatible = "rockchip,rk3399-pmusgrf", "syscon";
+ 		reg = <0x0 0xff330000 0x0 0xe3d4>;
+diff --git i/dts/upstream/src/arm64/rockchip/rk3399-rock-pi-4c.dts w/dts/upstream/src/arm64/rockchip/rk3399-rock-pi-4c.dts
+index de2ebe4cb4f..81e81cd2b47 100644
+--- i/dts/upstream/src/arm64/rockchip/rk3399-rock-pi-4c.dts
++++ w/dts/upstream/src/arm64/rockchip/rk3399-rock-pi-4c.dts
+@@ -16,6 +16,29 @@
+ 	aliases {
+ 		mmc2 = &sdio0;
+ 	};
++
++	firmware {
++		optee {
++			compatible = "linaro,optee-tz";
++			method = "smc";
++		};
++	};
++
++	reserved-memory {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++
++		event_log: tcg_event_log {
++			no-map;
++			reg = <(0xf8000000 - 0x2000) 0x2000>;
++		};
++	};
++
++	tpm@0 {
++		compatible = "microsoft,ftpm";
++		memory-region = <&event_log>;
++	};
+ };
+ 
+ &es8316 {

@@ -20,8 +20,17 @@ steps:
       # rock-pi-4c-rk3399
       - |
         tar xf u-boot.tar.bz2 --strip-components=1
+
+        patch -p1 < /pkg/patches/optee-reserved-dts.patch
       - |
-        make rock-pi-4c-rk3399_defconfig
+        scripts/kconfig/merge_config.sh configs/rock-pi-4c-rk3399_defconfig \
+          /pkg/configs/common.cfg \
+          /pkg/configs/board.cfg \
+          /pkg/configs/optee.cfg \
+          /pkg/configs/rpmb.cfg \
+          /pkg/configs/ftpm.cfg \
+          /pkg/configs/measured-boot.cfg \
+          /pkg/configs/efi.cfg
     build:
       - |
         make -j $(nproc) HOSTLDLIBS_mkimage="-lssl -lcrypto" \
