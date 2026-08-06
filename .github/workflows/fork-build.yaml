@@ -3,8 +3,9 @@
 #
 # - Triggers on every branch push and version tags (no PR required).
 # - Images go to ghcr.io/<repository_owner>/sbc-rockchip:<tag> (override USERNAME via repo env if needed).
-# - Default PLATFORM is linux/amd64 only (fast on GitHub-hosted runners). For arm64, use workflow_dispatch
-#   or set job env PLATFORM to linux/amd64,linux/arm64 (slower; QEMU is enabled automatically).
+# - Runs on a native arm64 runner (ubuntu-24.04-arm, free for public repos) and builds linux/arm64
+#   natively (no QEMU) so the AArch64 firmware (edk2) cross-compiles correctly and the overlay image
+#   is usable on the target board. Override via workflow_dispatch 'platform' if needed.
 
 name: fork-build
 
@@ -23,7 +24,7 @@ name: fork-build
       platform:
         description: "Comma-separated platforms, e.g. linux/amd64 or linux/amd64,linux/arm64"
         type: string
-        default: "linux/amd64"
+        default: "linux/arm64"
 
 concurrency:
   group: fork-build-${{ github.workflow }}-${{ github.ref }}
@@ -33,11 +34,11 @@ env:
   REGISTRY: ghcr.io
   # Fork images under your GitHub user/org (not siderolabs).
   USERNAME: ${{ github.repository_owner }}
-  PLATFORM: linux/amd64
+  PLATFORM: linux/arm64
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
       packages: write
