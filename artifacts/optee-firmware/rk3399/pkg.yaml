@@ -78,6 +78,7 @@ steps:
           CFG_DT=n \
           CFG_TPM_LOG_BASE_ADDR=0xf7ffe000 \
           CFG_TPM_MAX_LOG_SIZE=0x2000 \
+          CFG_EARLY_CONSOLE=y \
           CFG_TEE_CORE_LOG_LEVEL=2 \
           CFG_DRAM_BASE=0x0 \
           CFG_DRAM_SIZE=0x30000000 \
