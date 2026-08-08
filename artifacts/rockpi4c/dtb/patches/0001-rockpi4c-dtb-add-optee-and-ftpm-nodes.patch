@@ -2,7 +2,7 @@ diff --git i/arch/arm64/boot/dts/rockchip/rk3399-rock-pi-4c.dts w/arch/arm64/boo
 index 82ad2ca6b5c2..3137222097fa 100644
 --- i/arch/arm64/boot/dts/rockchip/rk3399-rock-pi-4c.dts
 +++ w/arch/arm64/boot/dts/rockchip/rk3399-rock-pi-4c.dts
-@@ -16,6 +16,29 @@ / {
+@@ -16,6 +16,17 @@ / {
  	aliases {
  		mmc2 = &sdio0;
  	};
@@ -14,20 +14,8 @@ index 82ad2ca6b5c2..3137222097fa 100644
 +		};
 +	};
 +
-+	reserved-memory {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+
-+		event_log: tcg_event_log {
-+			no-map;
-+			reg = <(0xf8000000 - 0x2000) 0x2000>;
-+		};
-+	};
-+
-+	tpm@0 {
++	tpm {
 +		compatible = "microsoft,ftpm";
-+		memory-region = <&event_log>;
 +	};
  };
  

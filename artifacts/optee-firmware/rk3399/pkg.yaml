@@ -54,8 +54,7 @@ steps:
         make -j $(nproc) -C optee_ftpm \
           CROSS_COMPILE= \
           TA_DEV_KIT_DIR=${PWD}/optee_os/out/arm-plat-rockchip/export-ta_arm64 \
-          CFG_MS_TPM_20_REF=${PWD}/ms-tpm-20-ref \
-          CFG_TA_MEASURED_BOOT=y
+          CFG_MS_TPM_20_REF=${PWD}/ms-tpm-20-ref
       - |
         # Avoid to strip required debug symbols
         unset CFLAGS
@@ -74,10 +73,6 @@ steps:
           CFG_CORE_BGET_BESTFIT=y \
           CFG_CORE_DYN_SHM=y \
           CFG_CORE_HEAP_SIZE=131072 \
-          CFG_CORE_TPM_EVENT_LOG=y \
-          CFG_DT=n \
-          CFG_TPM_LOG_BASE_ADDR=0xf7ffe000 \
-          CFG_TPM_MAX_LOG_SIZE=0x2000 \
           CFG_EARLY_CONSOLE=y \
           CFG_TEE_CORE_LOG_LEVEL=2 \
           CFG_DRAM_BASE=0x0 \
