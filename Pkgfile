@@ -29,14 +29,14 @@ vars:
   ms_tpm_20_ref_sha512: 8138d9292b185a179d72a273ae1737378f340d72acb0e3bafa83867e79c8056b551626fd9b745353f61646344ee34cab152654455bd35d46b7bc8838ddd70372
 
   # renovate: datasource=github-tags extractVersion=^(?<version>.*)$ depName=OP-TEE/optee_os
-  optee_os_version: 4.5.0
-  optee_os_sha256: 43c389f0505e8bc21d6fbaa8ea83ec67d1746ed14a537e3f505cd0e5b4cc2db9
-  optee_os_sha512: ec8a52f8e3d005d7d1c6b107f77e792b4854229c008b2553261f798505c2597aaf2ecde680e14239940e0df3896c52275dff0da4e95ad4dfdd3bf2d79b3688a2
+  optee_os_version: 4.10.0
+  optee_os_sha256: 18633691cb075ff2249422251f1cd77c30439a95b564b46682dea1fb6580a5af
+  optee_os_sha512: 90d83bb717dd592d317250b7e4cba52971d926b5665e0f3ff39b1b1815714ab7cfed88e6949c12fa7fac7517f54445d1b54bb1e367686056fafbf7f9c720b37f
 
   # renovate: datasource=github-tags extractVersion=^(?<version>.*)$ depName=OP-TEE/optee_ftpm
-  optee_ftpm_version: 4.5.0
-  optee_ftpm_sha256: 45100fc2559027af4a16ab7f8b6a97daf0836fcfeda0ab0d717b5a00cd493d65
-  optee_ftpm_sha512: 1644be2399041410c0c79188462ad19bcc3c4a0b7ccfbed126dc4bc482b0b40d57cc93f57c2a3708789922430aa3302e4cf0b2da1268e7b8e516909bb0c3f07c
+  optee_ftpm_version: 4.10.0
+  optee_ftpm_sha256: 907fd49dc9db97fc16c8e4309e8e17109a044711d053135f21690dadaf50908c
+  optee_ftpm_sha512: 9c7cf779424e1a50657c09f130c7a775936e97ec41d465ea6e31fe24a54ec862041684075fdf4a6b2767be21e117153a465ed389c11b5707f4d60c32ff176b2c
 
   # renovate: datasource=github-tags extractVersion=^v(?<version>.*)$ depName=u-boot/u-boot
   uboot_version: 2026.01
