@@ -75,6 +75,10 @@ steps:
           CFG_CORE_DYN_SHM=y \
           CFG_CORE_HEAP_SIZE=131072 \
           CFG_CORE_TPM_EVENT_LOG=y \
+          CFG_DT=n \
+          CFG_TPM_LOG_BASE_ADDR=0xf7ffe000 \
+          CFG_TPM_MAX_LOG_SIZE=0x2000 \
+          CFG_TEE_CORE_LOG_LEVEL=2 \
           CFG_DRAM_BASE=0x0 \
           CFG_DRAM_SIZE=0x30000000 \
           CFG_NSEC_DDR_1_BASE=0x32400000 \
