@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	_ "embed"
 	"fmt"
 	"os"
@@ -36,7 +37,13 @@ func main() {
 type rockPi4c struct{}
 
 type rockPi4cExtraOptions struct {
+	// DTOverlays is a comma-separated list of overlay names shipped in the
+	// artifacts (radxa-overlays .dtbo basenames), applied to the base DTB.
 	DTOverlays string `yaml:"dtOverlays,omitempty"`
+	// DTOverlaysInline is a comma-separated list of base64-encoded .dtbo blobs
+	// applied to the base DTB, for overlays maintained locally and passed at
+	// build time rather than shipped in the artifacts.
+	DTOverlaysInline string `yaml:"dtOverlaysInline,omitempty"`
 }
 
 func (i *rockPi4c) GetOptions(_ context.Context, extra rockPi4cExtraOptions) (overlay.Options, error) {
@@ -57,12 +64,41 @@ func (i *rockPi4c) GetOptions(_ context.Context, extra rockPi4cExtraOptions) (ov
 		DeviceTree: baseDTB,
 	}
 
-	if dtOverlays := deviceTreeOverlays(extra.DTOverlays); len(dtOverlays) > 0 {
+	dtOverlays := deviceTreeOverlays(extra.DTOverlays)
+
+	dtOverlaysInline, err := deviceTreeOverlaysInline(extra.DTOverlaysInline)
+	if err != nil {
+		return overlay.Options{}, err
+	}
+
+	if len(dtOverlays) > 0 || len(dtOverlaysInline) > 0 {
 		options.DeviceTreeOverlays = dtOverlays
+		options.DeviceTreeOverlaysInline = dtOverlaysInline
 		options.DeviceTreeOverlayTool = fdtoverlayTool
 	}
 
 	return options, nil
+}
+
+// deviceTreeOverlaysInline decodes a comma-separated list of base64-encoded
+// .dtbo blobs passed at build time.
+func deviceTreeOverlaysInline(dtOverlaysInline string) ([][]byte, error) {
+	var overlays [][]byte
+
+	for _, b64 := range strings.Split(dtOverlaysInline, ",") {
+		if b64 = strings.TrimSpace(b64); b64 == "" {
+			continue
+		}
+
+		blob, err := base64.StdEncoding.DecodeString(b64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid inline device tree overlay: %w", err)
+		}
+
+		overlays = append(overlays, blob)
+	}
+
+	return overlays, nil
 }
 
 // deviceTreeOverlays maps a comma-separated list of overlay names (radxa-overlays
