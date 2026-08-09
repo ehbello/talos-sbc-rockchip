@@ -64,7 +64,7 @@ vars:
   wolfssl_sha512: 502f01467bcda853a4aed6ce01213d568609444e35e1b7f2faeb19e49e7002d93fd9bfd490c7dd5225812785c32b4308a6594631f5c6a157784d352ef28b508c
 
   # renovate: datasource=docker versioning=docker depName=cgr.dev/chainguard/wolfi-base
-  wolfi_base_ref: sha256:211327e3db292fe34d2f867ff45cc3a1b4b9037acca85f8a88c8522cabfa1348
+  wolfi_base_ref: sha256:1454fe554abc89f10a43cabc290d8d61941d7e81c9778b408894aaba27d398a1
 
 labels:
   org.opencontainers.image.source: https://github.com/siderolabs/sbc-rockchip
