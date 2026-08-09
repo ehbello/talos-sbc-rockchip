@@ -24,7 +24,25 @@ steps:
         tar xf radxa-overlays.tar.gz --strip-components=1
         rm radxa-overlays.tar.gz
     build:
-      - make build-dtbo -j$(nproc) KSRC=.
+      # radxa-overlays >= 0.2.x dropped the standalone `build-dtbo` make target
+      # (overlays are now built via the kernel Kbuild / DKMS packaging). Compile
+      # the declared rockchip overlays directly instead: the base kernel headers
+      # provide the <dt-bindings/...> includes, quoted includes resolve relative
+      # to the overlay dir, and -@ keeps the symbols fdtoverlay needs.
+      - |
+        ovl=arch/arm64/boot/dts/rockchip/overlays
+        for dtbo in $(grep -hoE '[a-z0-9._-]+\.dtbo' ${ovl}/Makefile | sort -u); do
+          dts="${ovl}/${dtbo%.dtbo}.dts"
+          [ -f "${dts}" ] || continue
+          # A single overlay needing a binding absent from this kernel must not
+          # break the whole set (651+ overlays across rk33xx..rk3588); warn and
+          # skip, keeping the buildable ones (incl. the ones we select).
+          if ! cpp -nostdinc -undef -x assembler-with-cpp -E -I include "${dts}" "${dts}.tmp" 2>/dev/null \
+             || ! dtc -@ -I dts -O dtb -o "${ovl}/${dtbo}" "${dts}.tmp" 2>/dev/null; then
+            echo "WARN: skipping overlay ${dtbo} (failed to build)"
+            rm -f "${ovl}/${dtbo}"
+          fi
+        done
     install:
       - |
         for dtbo in $(find arch/arm64/boot/dts -name "*.dtbo" -printf "%P\n"); do
