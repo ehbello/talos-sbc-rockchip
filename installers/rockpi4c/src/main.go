@@ -5,14 +5,13 @@
 package main
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/siderolabs/go-cmd/pkg/cmd"
-	"github.com/siderolabs/go-copy/copy"
 	"github.com/siderolabs/talos/pkg/machinery/overlay"
 	"github.com/siderolabs/talos/pkg/machinery/overlay/adapter"
 	"golang.org/x/sys/unix"
@@ -21,12 +20,17 @@ import (
 const (
 	off   int64 = 512 * 64
 	board       = "rockpi4c"
-	// https://github.com/u-boot/u-boot/blob/4de720e98d552dfda9278516bf788c4a73b3e56f/configs/rock-pi-4c-rk3399_defconfig#L7=
-	dtb = "rockchip/rk3399-rock-pi-4c.dtb"
+
+	// Artifacts-relative device tree paths (see installers/pkg.yaml, which
+	// bundles the base DTB, the radxa-overlays .dtbo files and a static
+	// fdtoverlay into the overlay image).
+	baseDTB        = "arm64/dtb/rockchip/rk3399-rock-pi-4c.dtb"
+	overlaysDir    = "arm64/dtb/rockchip/overlays"
+	fdtoverlayTool = "arm64/fdtoverlay"
 )
 
 func main() {
-	adapter.Execute(&rockPi4c{})
+	adapter.Execute(context.Background(), &rockPi4c{})
 }
 
 type rockPi4c struct{}
@@ -35,8 +39,8 @@ type rockPi4cExtraOptions struct {
 	DTOverlays string `yaml:"dtOverlays,omitempty"`
 }
 
-func (i *rockPi4c) GetOptions(extra rockPi4cExtraOptions) (overlay.Options, error) {
-	return overlay.Options{
+func (i *rockPi4c) GetOptions(_ context.Context, extra rockPi4cExtraOptions) (overlay.Options, error) {
+	options := overlay.Options{
 		Name: board,
 		KernelArgs: []string{
 			"console=tty0",
@@ -47,49 +51,39 @@ func (i *rockPi4c) GetOptions(extra rockPi4cExtraOptions) (overlay.Options, erro
 		PartitionOptions: overlay.PartitionOptions{
 			Offset: 2048 * 10,
 		},
-	}, nil
-}
-
-func (i *rockPi4c) Install(options overlay.InstallOptions[rockPi4cExtraOptions]) error {
-	uBootBin := filepath.Join(options.ArtifactsPath, "arm64/u-boot", board, "u-boot-rockchip.bin")
-
-	if err := uBootLoaderInstall(uBootBin, options.InstallDisk); err != nil {
-		return err
+		// Embed the (measured) base device tree in the UKI. Board overlays are
+		// opt-in via the dtOverlays extra option and merged on top at image
+		// build time, so they end up inside the signed and measured UKI.
+		DeviceTree: baseDTB,
 	}
 
-	src := filepath.Join(options.ArtifactsPath, "arm64/dtb", dtb)
-	dst := filepath.Join(options.MountPrefix, "boot/EFI/dtb", dtb)
+	if dtOverlays := deviceTreeOverlays(extra.DTOverlays); len(dtOverlays) > 0 {
+		options.DeviceTreeOverlays = dtOverlays
+		options.DeviceTreeOverlayTool = fdtoverlayTool
+	}
 
-	if dtOverlays := options.ExtraOptions.DTOverlays; dtOverlays != "" {
-		// Apply each overlay sequentially
-		overlayNames := strings.Split(dtOverlays, ",")
-		fdtoverlayPath := filepath.Join(options.ArtifactsPath, "arm64/fdtoverlay")
+	return options, nil
+}
 
-		for _, overlayName := range overlayNames {
-			overlayPath := filepath.Join(options.ArtifactsPath, "arm64/dtb/rockchip/overlays", overlayName+".dtbo")
+// deviceTreeOverlays maps a comma-separated list of overlay names (radxa-overlays
+// .dtbo basenames, e.g. "rk3399-spi1-cs-gpio-slb9670") to their artifacts-relative
+// .dtbo paths.
+func deviceTreeOverlays(dtOverlays string) []string {
+	var overlays []string
 
-			// Run fdtoverlay to merge the overlay with the base DTB
-			if _, err := cmd.Run(
-				fdtoverlayPath,
-				"-v",      // verbose output
-				"-i", src, // input file
-				"-o", src, // output file (it is ok to use the same file)
-				overlayPath, // overlay file
-			); err != nil {
-				return fmt.Errorf("failed to apply overlay %s: %w", overlayName, err)
-			}
+	for _, name := range strings.Split(dtOverlays, ",") {
+		if name = strings.TrimSpace(name); name != "" {
+			overlays = append(overlays, filepath.Join(overlaysDir, name+".dtbo"))
 		}
 	}
 
-	return copyFileAndCreateDir(src, dst)
+	return overlays
 }
 
-func copyFileAndCreateDir(src, dst string) error {
-	if err := os.MkdirAll(filepath.Dir(dst), 0o700); err != nil {
-		return err
-	}
+func (i *rockPi4c) Install(_ context.Context, options overlay.InstallOptions[rockPi4cExtraOptions]) error {
+	uBootBin := filepath.Join(options.ArtifactsPath, "arm64/u-boot", board, "u-boot-rockchip.bin")
 
-	return copy.File(src, dst)
+	return uBootLoaderInstall(uBootBin, options.InstallDisk)
 }
 
 func uBootLoaderInstall(uBootBin, installDisk string) error {
