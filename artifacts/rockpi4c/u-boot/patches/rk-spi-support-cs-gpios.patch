@@ -1,4 +1,5 @@
-Support driving the SPI chip-select from a GPIO in the rockchip SPI driver.
+Support driving the SPI chip-select from a GPIO in the rockchip SPI driver, and
+skip the 16-bit flash read optimisation on such buses.
 
 The driver only drove the native chip-select via the SER register. On some
 boards the rk3399 native CS is claimed by hardware and can't be released, so
@@ -6,8 +7,14 @@ the device must be selected from a GPIO (as Linux supports via cs-gpios). Add
 optional cs-gpios support (active-low, per the SPI CS convention), guarded by
 CONFIG_IS_ENABLED(DM_GPIO) so SPL (which may build without DM_GPIO) links.
 
---- a/drivers/spi/rk_spi.c	2026-08-10 17:30:24.712028678 +0100
-+++ b/drivers/spi/rk_spi.c	2026-08-10 17:30:24.830608424 +0100
+The read path uses a 16-bit "flash reader" that flips the frame size and
+toggles the controller enable mid-transfer. That glitches devices which hold CS
+across several spi_xfer() calls (e.g. a TPM's TIS protocol). Skip it on buses
+that use a GPIO chip-select (not the boot SPI-NOR), falling back to the plain
+8-bit path.
+
+--- a/drivers/spi/rk_spi.c	2026-08-10 19:52:26.691715927 +0100
++++ b/drivers/spi/rk_spi.c	2026-08-10 19:52:26.792561135 +0100
 @@ -23,6 +23,7 @@
  #include <asm/arch-rockchip/clock.h>
  #include <asm/arch-rockchip/periph.h>
@@ -26,15 +33,16 @@ CONFIG_IS_ENABLED(DM_GPIO) so SPL (which may build without DM_GPIO) links.
  struct rockchip_spi_params {
  	/* RXFIFO overruns and TXFIFO underruns stop the master clock */
  	bool master_manages_fifo;
-@@ -47,6 +51,7 @@
+@@ -47,6 +51,8 @@
  	uintptr_t base;
  	uint deactivate_delay_us;	/* Delay to wait after deactivate */
  	uint activate_delay_us;		/* Delay to wait after activate */
 +	struct gpio_desc cs_gpios[ROCKCHIP_SPI_MAX_CS];
++	bool cs_gpio;			/* CS driven from a GPIO */
  };
  
  struct rockchip_spi_priv {
-@@ -152,6 +157,9 @@
+@@ -152,6 +158,9 @@
  	}
  
  	debug("activate cs%u\n", cs);
@@ -44,7 +52,7 @@ CONFIG_IS_ENABLED(DM_GPIO) so SPL (which may build without DM_GPIO) links.
  	writel(1 << cs, &regs->ser);
  	if (plat->activate_delay_us)
  		udelay(plat->activate_delay_us);
-@@ -166,6 +174,9 @@
+@@ -166,6 +175,9 @@
  
  	debug("deactivate cs%u\n", cs);
  	writel(0, &regs->ser);
@@ -54,7 +62,7 @@ CONFIG_IS_ENABLED(DM_GPIO) so SPL (which may build without DM_GPIO) links.
  
  	/* Remember time of this transaction so we can honour the bus delay */
  	if (plat->deactivate_delay_us)
-@@ -216,6 +227,26 @@
+@@ -216,6 +228,28 @@
  		debug("%s: base=%x, max-frequency=%d, deactivate_delay=%d\n",
  		      __func__, (uint)plat->base, plat->frequency,
  		      plat->deactivate_delay_us);
@@ -76,8 +84,27 @@ CONFIG_IS_ENABLED(DM_GPIO) so SPL (which may build without DM_GPIO) links.
 +				if (ret && ret != -ENOENT)
 +					debug("%s: cs-gpios[%d]: %d\n",
 +					      __func__, i, ret);
++				if (!ret && dm_gpio_is_valid(&plat->cs_gpios[i]))
++					plat->cs_gpio = true;
 +			}
 +		}
  	}
  
  	return 0;
+@@ -431,6 +465,7 @@
+ 	struct rockchip_spi_priv *priv = dev_get_priv(bus);
+ 	struct rockchip_spi *regs = priv->regs;
+ 	struct dm_spi_slave_plat *slave_plat = dev_get_parent_plat(dev);
++	struct rockchip_spi_plat *plat = dev_get_plat(bus);
+ 	int len = bitlen >> 3;
+ 	const u8 *out = dout;
+ 	u8 *in = din;
+@@ -452,7 +487,7 @@
+ 	 * case of read-only transfers by using the full 16bits of each
+ 	 * FIFO element.
+ 	 */
+-	if (!out) {
++	if (!out && !plat->cs_gpio) {
+ 		ret = rockchip_spi_16bit_reader(dev, &in, &len);
+ 		/*
+ 		 * If "in" isn't 16b-aligned, we need to send the last byte
