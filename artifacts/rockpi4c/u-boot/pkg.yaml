@@ -21,14 +21,15 @@ steps:
       - |
         tar xf u-boot.tar.bz2 --strip-components=1
 
-        patch -p1 < /pkg/patches/optee-reserved-dts.patch
+        patch -p1 < /pkg/patches/uboot-dts-spi-tpm.patch
+        patch -p1 < /pkg/patches/rk-spi-support-cs-gpios.patch
       - |
         scripts/kconfig/merge_config.sh configs/rock-pi-4c-rk3399_defconfig \
           /pkg/configs/common.cfg \
           /pkg/configs/board.cfg \
           /pkg/configs/optee.cfg \
           /pkg/configs/rpmb.cfg \
-          /pkg/configs/ftpm.cfg \
+          /pkg/configs/tpm.cfg \
           /pkg/configs/measured-boot.cfg \
           /pkg/configs/efi.cfg
     build:

@@ -102,7 +102,7 @@ func deviceTreeOverlaysInline(dtOverlaysInline string) ([][]byte, error) {
 }
 
 // deviceTreeOverlays maps a comma-separated list of overlay names (radxa-overlays
-// .dtbo basenames, e.g. "rk3399-spi1-cs-gpio-slb9670") to their artifacts-relative
+// .dtbo basenames, e.g. "rk3399-spi1-spidev") to their artifacts-relative
 // .dtbo paths.
 func deviceTreeOverlays(dtOverlays string) []string {
 	var overlays []string
