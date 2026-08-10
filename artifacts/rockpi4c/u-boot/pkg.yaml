@@ -39,7 +39,9 @@ steps:
     install:
       - |
         mkdir -p /rootfs/artifacts/arm64/u-boot/rockpi4c
-        cp -v -t /rootfs/artifacts/arm64/u-boot/rockpi4c u-boot-rockchip.bin u-boot-rockchip-spi.bin
+        # No u-boot-rockchip-spi.bin: SPI-NOR boot is disabled in this variant
+        # (the spi1 pins carry the TPM). The installer writes u-boot to eMMC/SD.
+        cp -v -t /rootfs/artifacts/arm64/u-boot/rockpi4c u-boot-rockchip.bin
 finalize:
   - from: /rootfs
     to: /rootfs
