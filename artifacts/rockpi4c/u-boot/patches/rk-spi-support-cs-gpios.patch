@@ -3,10 +3,11 @@ Support driving the SPI chip-select from a GPIO in the rockchip SPI driver.
 The driver only drove the native chip-select via the SER register. On some
 boards the rk3399 native CS is claimed by hardware and can't be released, so
 the device must be selected from a GPIO (as Linux supports via cs-gpios). Add
-optional cs-gpios support (active-low, per the SPI CS convention).
+optional cs-gpios support (active-low, per the SPI CS convention), guarded by
+CONFIG_IS_ENABLED(DM_GPIO) so SPL (which may build without DM_GPIO) links.
 
---- a/drivers/spi/rk_spi.c	2026-08-10 14:14:40.199755372 +0100
-+++ b/drivers/spi/rk_spi.c	2026-08-10 14:14:40.325389146 +0100
+--- a/drivers/spi/rk_spi.c	2026-08-10 17:30:24.712028678 +0100
++++ b/drivers/spi/rk_spi.c	2026-08-10 17:30:24.830608424 +0100
 @@ -23,6 +23,7 @@
  #include <asm/arch-rockchip/clock.h>
  #include <asm/arch-rockchip/periph.h>
@@ -33,25 +34,27 @@ optional cs-gpios support (active-low, per the SPI CS convention).
  };
  
  struct rockchip_spi_priv {
-@@ -152,6 +157,8 @@
+@@ -152,6 +157,9 @@
  	}
  
  	debug("activate cs%u\n", cs);
-+	if (cs < ROCKCHIP_SPI_MAX_CS && dm_gpio_is_valid(&plat->cs_gpios[cs]))
++	if (CONFIG_IS_ENABLED(DM_GPIO) && cs < ROCKCHIP_SPI_MAX_CS &&
++	    dm_gpio_is_valid(&plat->cs_gpios[cs]))
 +		dm_gpio_set_value(&plat->cs_gpios[cs], 1);
  	writel(1 << cs, &regs->ser);
  	if (plat->activate_delay_us)
  		udelay(plat->activate_delay_us);
-@@ -166,6 +173,8 @@
+@@ -166,6 +174,9 @@
  
  	debug("deactivate cs%u\n", cs);
  	writel(0, &regs->ser);
-+	if (cs < ROCKCHIP_SPI_MAX_CS && dm_gpio_is_valid(&plat->cs_gpios[cs]))
++	if (CONFIG_IS_ENABLED(DM_GPIO) && cs < ROCKCHIP_SPI_MAX_CS &&
++	    dm_gpio_is_valid(&plat->cs_gpios[cs]))
 +		dm_gpio_set_value(&plat->cs_gpios[cs], 0);
  
  	/* Remember time of this transaction so we can honour the bus delay */
  	if (plat->deactivate_delay_us)
-@@ -216,6 +225,26 @@
+@@ -216,6 +227,26 @@
  		debug("%s: base=%x, max-frequency=%d, deactivate_delay=%d\n",
  		      __func__, (uint)plat->base, plat->frequency,
  		      plat->deactivate_delay_us);
@@ -60,8 +63,8 @@ optional cs-gpios support (active-low, per the SPI CS convention).
 +			int i;
 +
 +			/*
-+			 * Optional cs-gpios: the rk3399 native chip-select is
-+			 * not usable on some boards, so allow driving CS from a
++			 * Optional cs-gpios: the native chip-select is not
++			 * usable on some boards, so allow driving CS from a
 +			 * GPIO (as Linux does). Treated as active-low, matching
 +			 * the SPI CS convention.
 +			 */
