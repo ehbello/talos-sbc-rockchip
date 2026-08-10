@@ -1,17 +1,18 @@
-u-boot control DTB for the rock-pi-4c: enable an SPI TPM on spi1 for measured
-boot.
+u-boot control DTB for the rock-pi-4c: enable an SPI TPM over soft-SPI for
+measured boot.
 
   - keep an OP-TEE firmware node (linaro,optee-tz): OP-TEE stays loaded and is
     used by RNG_OPTEE;
-  - drive spi1 CS from GPIO4_D5 (the native spi1 CS is claimed by hardware and
-    unusable here), disable the unpopulated NOR flash sharing spi1 CS0, and add
-    a TPM TIS SPI device (tcg,tpm_tis-spi).
+  - the rk3399 native spi1 chip-select is claimed by hardware and unusable, and
+    the hardware SPI controller is unsuitable for a TPM here, so disable spi1 and
+    drive a TPM TIS device (tcg,tpm_tis-spi) over soft-SPI (bit-banged GPIO on
+    the spi1 pins). Inert if no TPM is wired.
 
 With the TPM visible, u-boot exposes EFI_TCG2_PROTOCOL so systemd-stub measures
 the UKI into PCR 11.
 
---- a/arch/arm/dts/rk3399-u-boot.dtsi	2026-08-10 14:18:55.270633254 +0100
-+++ b/arch/arm/dts/rk3399-u-boot.dtsi	2026-08-10 14:32:07.271917410 +0100
+--- a/arch/arm/dts/rk3399-u-boot.dtsi	2026-08-10 21:01:52.984159116 +0100
++++ b/arch/arm/dts/rk3399-u-boot.dtsi	2026-08-10 21:01:53.090000754 +0100
 @@ -16,6 +16,13 @@
  		u-boot,spl-boot-order = "same-as-spl", &sdhci, &sdmmc;
  	};
@@ -26,28 +27,54 @@ the UKI into PCR 11.
  	pmusgrf: syscon@ff330000 {
  		compatible = "rockchip,rk3399-pmusgrf", "syscon";
  		reg = <0x0 0xff330000 0x0 0xe3d4>;
---- a/arch/arm/dts/rk3399-rock-pi-4c-u-boot.dtsi	2026-08-10 14:18:55.272633285 +0100
-+++ b/arch/arm/dts/rk3399-rock-pi-4c-u-boot.dtsi	2026-08-10 14:32:07.272105914 +0100
-@@ -6,8 +6,20 @@
+--- a/arch/arm/dts/rk3399-rock-pi-4c-u-boot.dtsi	2026-08-10 21:01:52.987159161 +0100
++++ b/arch/arm/dts/rk3399-rock-pi-4c-u-boot.dtsi	2026-08-10 21:01:53.090195492 +0100
+@@ -5,9 +5,45 @@
+ 
  #include "rk3399-rock-pi-4-u-boot.dtsi"
  
++/*
++ * The rk3399 native spi1 chip-select is claimed by hardware and unusable on
++ * this board, and the hardware SPI controller cannot be used for a TPM here.
++ * Drive an SPI TPM over soft-SPI (bit-banged GPIO on the spi1 pins) so u-boot
++ * can measure the UKI into PCR 11. Inert if no TPM is wired.
++ */
  &spi1 {
-+	/* The rk3399 native spi1 chip-select is claimed by hardware and
-+	 * unusable on this board, so drive CS from GPIO4_D5 instead. */
-+	pinctrl-0 = <&spi1_clk &spi1_tx &spi1_rx>;
-+	num-cs = <1>;
-+	cs-gpios = <&gpio4 RK_PD5 GPIO_ACTIVE_LOW>;
-+
-+	/* Unpopulated NOR flash footprint shares spi1 CS0. */
- 	flash@0 {
+-	flash@0 {
 -		bootph-pre-ram;
 -		bootph-some-ram;
-+		status = "disabled";
-+	};
++	status = "disabled";
++};
 +
-+	tpm@0 {
-+		compatible = "tcg,tpm_tis-spi";
-+		reg = <0>;
-+		spi-max-frequency = <1000000>;
++/ {
++	tpm-spi {
++		compatible = "spi-gpio";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&tpm_spi_gpio_pins>;
++		gpio-sck = <&gpio1 RK_PB1 GPIO_ACTIVE_HIGH>;
++		gpio-mosi = <&gpio1 RK_PB0 GPIO_ACTIVE_HIGH>;
++		gpio-miso = <&gpio1 RK_PA7 GPIO_ACTIVE_HIGH>;
++		cs-gpios = <&gpio4 RK_PD5 GPIO_ACTIVE_LOW>;
++		num-chipselects = <1>;
++
++		tpm@0 {
++			compatible = "tcg,tpm_tis-spi";
++			reg = <0>;
++			spi-max-frequency = <1000000>;
++		};
++	};
++};
++
++&pinctrl {
++	tpm-spi {
++		tpm_spi_gpio_pins: tpm-spi-gpio-pins {
++			rockchip,pins =
++				<1 RK_PB1 RK_FUNC_GPIO &pcfg_pull_none>,
++				<1 RK_PB0 RK_FUNC_GPIO &pcfg_pull_none>,
++				<1 RK_PA7 RK_FUNC_GPIO &pcfg_pull_none>,
++				<4 RK_PD5 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
  	};
  };
