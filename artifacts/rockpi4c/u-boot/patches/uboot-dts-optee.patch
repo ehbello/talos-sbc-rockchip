@@ -1,0 +1,19 @@
+Add an OP-TEE firmware node (linaro,optee-tz) to the u-boot control DTB so
+u-boot can talk to OP-TEE (e.g. RNG_OPTEE). Common to both u-boot variants.
+
+--- a/arch/arm/dts/rk3399-u-boot.dtsi	2026-08-10 23:42:27.300229206 +0100
++++ b/arch/arm/dts/rk3399-u-boot.dtsi	2026-08-10 23:42:27.423781864 +0100
+@@ -16,6 +16,13 @@
+ 		u-boot,spl-boot-order = "same-as-spl", &sdhci, &sdmmc;
+ 	};
+ 
++	firmware {
++		optee {
++			compatible = "linaro,optee-tz";
++			method = "smc";
++		};
++	};
++
+ 	pmusgrf: syscon@ff330000 {
+ 		compatible = "rockchip,rk3399-pmusgrf", "syscon";
+ 		reg = <0x0 0xff330000 0x0 0xe3d4>;

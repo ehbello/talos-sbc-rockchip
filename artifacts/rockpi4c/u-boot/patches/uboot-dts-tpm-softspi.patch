@@ -1,34 +1,15 @@
-u-boot control DTB for the rock-pi-4c: enable an SPI TPM over soft-SPI for
-measured boot.
+Drive an SPI TPM over soft-SPI in the u-boot control DTB (TPM variant only).
 
-  - keep an OP-TEE firmware node (linaro,optee-tz): OP-TEE stays loaded and is
-    used by RNG_OPTEE;
-  - the rk3399 native spi1 chip-select is claimed by hardware and unusable, and
-    the hardware SPI controller is unsuitable for a TPM here, so disable spi1 and
-    drive a TPM TIS device (tcg,tpm_tis-spi) over soft-SPI (bit-banged GPIO on
-    the spi1 pins). Inert if no TPM is wired.
+The rk3399 native spi1 chip-select is claimed by hardware and unusable here, and
+the hardware SPI controller is unsuitable for a TPM, so disable spi1 and add a
+spi-gpio bus bit-banging the spi1 pins + a GPIO chip-select, with a generic TPM
+TIS device (tcg,tpm_tis-spi). With the TPM visible, u-boot exposes
+EFI_TCG2_PROTOCOL so systemd-stub measures the UKI into PCR 11. Disabling spi1
+means SPI-NOR boot is unavailable in this variant (see the SPL_SPI note in
+tpm.cfg); the default variant keeps the flash.
 
-With the TPM visible, u-boot exposes EFI_TCG2_PROTOCOL so systemd-stub measures
-the UKI into PCR 11.
-
---- a/arch/arm/dts/rk3399-u-boot.dtsi	2026-08-10 21:01:52.984159116 +0100
-+++ b/arch/arm/dts/rk3399-u-boot.dtsi	2026-08-10 21:01:53.090000754 +0100
-@@ -16,6 +16,13 @@
- 		u-boot,spl-boot-order = "same-as-spl", &sdhci, &sdmmc;
- 	};
- 
-+	firmware {
-+		optee {
-+			compatible = "linaro,optee-tz";
-+			method = "smc";
-+		};
-+	};
-+
- 	pmusgrf: syscon@ff330000 {
- 		compatible = "rockchip,rk3399-pmusgrf", "syscon";
- 		reg = <0x0 0xff330000 0x0 0xe3d4>;
---- a/arch/arm/dts/rk3399-rock-pi-4c-u-boot.dtsi	2026-08-10 21:01:52.987159161 +0100
-+++ b/arch/arm/dts/rk3399-rock-pi-4c-u-boot.dtsi	2026-08-10 21:01:53.090195492 +0100
+--- a/arch/arm/dts/rk3399-rock-pi-4c-u-boot.dtsi	2026-08-10 23:42:27.304229268 +0100
++++ b/arch/arm/dts/rk3399-rock-pi-4c-u-boot.dtsi	2026-08-10 23:42:27.423978468 +0100
 @@ -5,9 +5,45 @@
  
  #include "rk3399-rock-pi-4-u-boot.dtsi"

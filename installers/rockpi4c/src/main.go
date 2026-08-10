@@ -44,6 +44,14 @@ type rockPi4cExtraOptions struct {
 	// applied to the base DTB, for overlays maintained locally and passed at
 	// build time rather than shipped in the artifacts.
 	DTOverlaysInline string `yaml:"dtOverlaysInline,omitempty"`
+	// SPITpm ("true") selects the u-boot variant that drives an external SPI TPM
+	// (over soft-SPI), which lets u-boot measure the UKI into PCR 11. That
+	// variant disables the SPI-NOR flash (shared spi1 pins); the default keeps
+	// the flash and SPI-NOR boot. Named for the mechanism (SPI TPM), not measured
+	// boot: a future fТPM (OP-TEE) would also enable measured boot without this.
+	// A string (not bool) so it decodes the same whether passed as a CLI
+	// --overlay-option (always a string) or in a profile's overlay options.
+	SPITpm string `yaml:"spiTpm,omitempty"`
 }
 
 func (i *rockPi4c) GetOptions(_ context.Context, extra rockPi4cExtraOptions) (overlay.Options, error) {
@@ -117,7 +125,12 @@ func deviceTreeOverlays(dtOverlays string) []string {
 }
 
 func (i *rockPi4c) Install(_ context.Context, options overlay.InstallOptions[rockPi4cExtraOptions]) error {
-	uBootBin := filepath.Join(options.ArtifactsPath, "arm64/u-boot", board, "u-boot-rockchip.bin")
+	uBootVariant := board
+	if options.ExtraOptions.SPITpm == "true" {
+		uBootVariant = board + "-spi-tpm"
+	}
+
+	uBootBin := filepath.Join(options.ArtifactsPath, "arm64/u-boot", uBootVariant, "u-boot-rockchip.bin")
 
 	return uBootLoaderInstall(uBootBin, options.InstallDisk)
 }
