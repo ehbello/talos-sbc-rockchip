@@ -23,5 +23,10 @@ vars:
   linux_sha256: a1aeb926c7c4a1564368200b1082e45bb958007682d804aff88abbc3a7a47b5d
   linux_sha512: 77393001f6635e04c41bf28b8b4305b0c17339d7e70c753f73f45ada6758b3dd461cd975b3ad18123aa9e391f100b3bf8995d0b296db7cba05f9548adf636532
 
+  # renovate: datasource=github-tags extractVersion=^(?<version>.*)$ depName=OP-TEE/optee_os
+  optee_os_version: 4.10.0
+  optee_os_sha256: 18633691cb075ff2249422251f1cd77c30439a95b564b46682dea1fb6580a5af
+  optee_os_sha512: 90d83bb717dd592d317250b7e4cba52971d926b5665e0f3ff39b1b1815714ab7cfed88e6949c12fa7fac7517f54445d1b54bb1e367686056fafbf7f9c720b37f
+
 labels:
   org.opencontainers.image.source: https://github.com/siderolabs/sbc-rockchip

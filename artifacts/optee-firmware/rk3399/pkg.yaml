@@ -1,0 +1,53 @@
+name: optee-firmware-rk3399
+variant: scratch
+shell: /bin/bash
+dependencies:
+  - stage: base
+steps:
+  - sources:
+      - url: https://github.com/OP-TEE/optee_os/archive/{{ .optee_os_version }}.tar.gz
+        destination: optee_os.tar.gz
+        sha256: "{{ .optee_os_sha256 }}"
+        sha512: "{{ .optee_os_sha512 }}"
+    env:
+      SOURCE_DATE_EPOCH: {{ .BUILD_ARG_SOURCE_DATE_EPOCH }}
+    network: default
+    prepare:
+      - |
+        mkdir -p optee_os && tar xf optee_os.tar.gz --strip-components=1 -C optee_os
+        rm optee_os.tar.gz
+    # rk3399
+    build:
+      - |
+        # Avoid stripping required debug symbols.
+        unset CFLAGS
+        unset CXXFLAGS
+        unset LDFLAGS
+
+        make -j $(nproc) -C optee_os \
+          ARCH=arm PLATFORM=rockchip-rk3399 \
+          CROSS_COMPILE64= \
+          CFG_ARM64_core=y \
+          CFG_CORE_BGET_BESTFIT=y \
+          CFG_CORE_DYN_SHM=y \
+          CFG_CORE_HEAP_SIZE=131072 \
+          CFG_EARLY_CONSOLE=y \
+          CFG_TEE_CORE_LOG_LEVEL=2 \
+          CFG_DRAM_BASE=0x0 \
+          CFG_DRAM_SIZE=0x30000000 \
+          CFG_NSEC_DDR_1_BASE=0x32400000 \
+          CFG_NSEC_DDR_1_SIZE=0xC5A00000 \
+          CFG_REE_FS=n \
+          CFG_RPMB_FS=n \
+          CFG_WITH_USER_TA=n \
+          CFG_SCTLR_ALIGNMENT_CHECK=n
+
+    install:
+      - |
+        mkdir -p /rootfs/optee-firmware/rk3399
+
+        cp -t /rootfs/optee-firmware/rk3399/ \
+          optee_os/out/arm-plat-rockchip/core/tee.bin
+finalize:
+  - from: /rootfs
+    to: /libs
