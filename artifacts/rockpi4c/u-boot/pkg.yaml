@@ -7,6 +7,7 @@ shell: /bin/bash
 dependencies:
   - stage: base
   - stage: arm-trusted-firmware-rk3399
+  - stage: optee-firmware-rk3399
 steps:
   - sources:
       - url: https://ftp.denx.de/pub/u-boot/u-boot-{{ .uboot_version }}.tar.bz2
@@ -16,18 +17,28 @@ steps:
     env:
       SOURCE_DATE_EPOCH: {{ .BUILD_ARG_SOURCE_DATE_EPOCH }}
     prepare:
-      # rock-pi-4c-rk3399
+      # rock-pi-4c-rk3399, with the OP-TEE control-DTB node.
       - |
         tar xf u-boot.tar.bz2 --strip-components=1
-      - |
-        make rock-pi-4c-rk3399_defconfig
+
+        patch -p1 < /pkg/patches/uboot-dts-optee.patch
     build:
+      # Build u-boot with OP-TEE (BL32) and the OP-TEE dispatcher in ATF (BL31),
+      # keeping the SPI-NOR flash and SPI boot.
       - |
-        make -j $(nproc) HOSTLDLIBS_mkimage="-lssl -lcrypto" BL31=/libs/arm-trusted-firmware/rk3399/bl31.elf
-    install:
-      - |
+        scripts/kconfig/merge_config.sh configs/rock-pi-4c-rk3399_defconfig \
+          /pkg/configs/common.cfg \
+          /pkg/configs/board.cfg \
+          /pkg/configs/optee.cfg \
+          /pkg/configs/efi.cfg
+
+        make -j $(nproc) HOSTLDLIBS_mkimage="-lssl -lcrypto" \
+            BL31=/libs/arm-trusted-firmware/rk3399/bl31.elf \
+            TEE=/libs/optee-firmware/rk3399/tee.bin
+
         mkdir -p /rootfs/artifacts/arm64/u-boot/rockpi4c
-        cp u-boot-rockchip.bin /rootfs/artifacts/arm64/u-boot/rockpi4c
+        cp -v -t /rootfs/artifacts/arm64/u-boot/rockpi4c \
+          u-boot-rockchip.bin u-boot-rockchip-spi.bin
 finalize:
   - from: /rootfs
     to: /rootfs
