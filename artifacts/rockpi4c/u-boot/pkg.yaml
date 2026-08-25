@@ -17,15 +17,22 @@ steps:
     env:
       SOURCE_DATE_EPOCH: {{ .BUILD_ARG_SOURCE_DATE_EPOCH }}
     prepare:
-      # rock-pi-4c-rk3399, with the OP-TEE control-DTB node.
+      # rock-pi-4c-rk3399. The OP-TEE control-DTB node is common to both variants.
       - |
         tar xf u-boot.tar.bz2 --strip-components=1
 
         patch -p1 < /pkg/patches/uboot-dts-optee.patch
     build:
-      # Build u-boot with OP-TEE (BL32) and the OP-TEE dispatcher in ATF (BL31),
-      # keeping the SPI-NOR flash and SPI boot.
+      # Two variants are built from the same source:
+      #   rockpi4c      -- default: SPI-NOR flash boot, no TPM (flash preserved);
+      #   rockpi4c-spi-tpm  -- soft-SPI external TPM (enables measured boot),
+      #                        no SPI-NOR flash.
+      # The installer picks one via the `uBootVariant` overlay option. A non-default
+      # variant also ships, under its overlays/ directory, the kernel device tree
+      # overlays that describe the same hardware change; the imager merges them into
+      # the measured UKI DTB so u-boot and the kernel agree.
       - |
+        # Variant 1: default (keeps the SPI-NOR flash + SPI boot).
         scripts/kconfig/merge_config.sh configs/rock-pi-4c-rk3399_defconfig \
           /pkg/configs/common.cfg \
           /pkg/configs/board.cfg \
@@ -39,6 +46,36 @@ steps:
         mkdir -p /rootfs/artifacts/arm64/u-boot/rockpi4c
         cp -v -t /rootfs/artifacts/arm64/u-boot/rockpi4c \
           u-boot-rockchip.bin u-boot-rockchip-spi.bin
+      - |
+        # Variant 2: TPM (soft-SPI measured boot; spi1/SPL_SPI disabled -> no
+        # SPI-NOR boot, and no u-boot-rockchip-spi.bin).
+        make mrproper
+        patch -p1 < /pkg/patches/uboot-dts-tpm-softspi.patch
+
+        scripts/kconfig/merge_config.sh configs/rock-pi-4c-rk3399_defconfig \
+          /pkg/configs/common.cfg \
+          /pkg/configs/board.cfg \
+          /pkg/configs/optee.cfg \
+          /pkg/configs/efi.cfg \
+          /pkg/configs/measured-boot.cfg \
+          /pkg/configs/tpm.cfg
+
+        make -j $(nproc) HOSTLDLIBS_mkimage="-lssl -lcrypto" \
+            BL31=/libs/arm-trusted-firmware/rk3399/bl31.elf \
+            TEE=/libs/optee-firmware/rk3399/tee.bin
+
+        mkdir -p /rootfs/artifacts/arm64/u-boot/rockpi4c-spi-tpm
+        cp -v -t /rootfs/artifacts/arm64/u-boot/rockpi4c-spi-tpm \
+          u-boot-rockchip.bin
+
+        # Ship the matching kernel overlay: the imager applies every .dtbo under
+        # the variant's overlays/ dir on top of the measured UKI base DTB, so the
+        # kernel sees the TPM on spi1 (and the SPI-NOR flash disabled) too. Raw
+        # pin numbers -> no cpp includes needed; -@ keeps symbols for fdtoverlay.
+        mkdir -p /rootfs/artifacts/arm64/u-boot/rockpi4c-spi-tpm/overlays
+        dtc -@ -I dts -O dtb \
+          -o /rootfs/artifacts/arm64/u-boot/rockpi4c-spi-tpm/overlays/rk3399-rock-pi-4c-spi1-tpm.dtbo \
+          /pkg/overlays/rk3399-rock-pi-4c-spi1-tpm.dtso
 finalize:
   - from: /rootfs
     to: /rootfs
