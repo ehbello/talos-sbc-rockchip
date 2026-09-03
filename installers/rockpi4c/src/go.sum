@@ -1,5 +1,5 @@
-github.com/ehbello/talos/pkg/machinery v1.14.0-rc.2.0.20260901214701-4fd5cc9ef319 h1:I/dr13qKv75X6vCBMqFv0/eU4zaSNmD+m50++/kYRE8=
-github.com/ehbello/talos/pkg/machinery v1.14.0-rc.2.0.20260901214701-4fd5cc9ef319/go.mod h1:oL3TmTv3RasTvMJx1kCZV9fqbUqkOdmTMfGjzQDk8F0=
+github.com/ehbello/talos/pkg/machinery v1.14.0-rc.2.0.20260903091643-7386b17fbf6e h1:dsT6KfUd3SZrMwm7vvPbBT/UMI31m6IiZzMd8aGaxCI=
+github.com/ehbello/talos/pkg/machinery v1.14.0-rc.2.0.20260903091643-7386b17fbf6e/go.mod h1:8rhGLm+Se7X/VnTG6InEhagg7zCDUFRwfJjLcqGNw7w=
 go.yaml.in/yaml/v4 v4.0.0-rc.6 h1:1h7H1ohdUh93/FyE4YaDa1Zh64K6VVbjF4K6WUxMtH4=
 go.yaml.in/yaml/v4 v4.0.0-rc.6/go.mod h1:aZqd9kCMsGL7AuUv/m/PvWLdg5sjJsZ4oHDEnfPPfY0=
 golang.org/x/sys v0.47.0 h1:o7XGOvZQCADBQQ4Y7VNq2dRWQR7JmOUW8Kxx4ZsNgWs=
